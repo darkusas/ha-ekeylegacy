@@ -196,10 +196,11 @@ async def async_setup_entry(
     )
 
 
+@callback
 def _migrate_entity_id(
     hass: HomeAssistant, unique_id: str, expected_entity_id: str
 ) -> None:
-    """Migrate existing entity IDs to the expected format."""
+    """Rename legacy event entity IDs to the new `event.ekey_<type>` format."""
     entity_registry = er.async_get(hass)
     current_entity_id = entity_registry.async_get_entity_id("event", DOMAIN, unique_id)
     if current_entity_id is None or current_entity_id == expected_entity_id:
