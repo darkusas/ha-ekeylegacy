@@ -33,13 +33,18 @@ jobs:
           VERSION="${TAG#v}"  # Remove 'v' prefix if it exists
           sed -i 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' "${{ github.workspace }}/custom_components/ekeylegacy/manifest.json"
 
-      - name: 🤐 Copy and Zip
+      - name: 🤐 Create HACS release ZIP
         run: |
-          cd "${{ github.workspace }}/custom_components/ekeylegacy"
-          zip ekeylegacy.zip -r ./
+          cd "${{ github.workspace }}"
+          zip -qr "${{ github.workspace }}/ekeylegacy.zip" custom_components/ekeylegacy \
+            -x '*/__pycache__/*' '*.pyc'
+
+      - name: 🔍 Verify ZIP layout
+        run: |
+          zipinfo -1 "${{ github.workspace }}/ekeylegacy.zip"
 
       - name: ☁️ Upload zip to release
         uses: softprops/action-gh-release@v2.2.2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
-          files: "${{ github.workspace }}/custom_components/ekeylegacy/ekeylegacy.zip"
+          files: "${{ github.workspace }}/ekeylegacy.zip"
