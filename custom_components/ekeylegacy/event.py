@@ -180,7 +180,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Ekey (legacy) event platform."""
-    _async_migrate_entity_id(
+    _migrate_entity_id(
         hass,
         f"{config_entry.data[CONF_TYPE]}-{config_entry.data[CONF_PORT]}",
         f"event.ekey_{config_entry.data[CONF_TYPE]}",
@@ -196,7 +196,7 @@ async def async_setup_entry(
     )
 
 
-def _async_migrate_entity_id(
+def _migrate_entity_id(
     hass: HomeAssistant, unique_id: str, expected_entity_id: str
 ) -> None:
     """Migrate existing entity IDs to the expected format."""
