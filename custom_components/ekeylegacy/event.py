@@ -27,20 +27,20 @@ class EkeyLegacyAuthEvent(EventEntity):
     _attr_event_types = ["authenticated", "failed"]
     _attr_has_entity_name = True
 
-    def __init__(self, port: int, type: str, delimiter: str) -> None:
+    def __init__(self, port: int, ekey_type: str, delimiter: str) -> None:
         """Initialize the Ekey (legacy) event entity."""
-        display_name = f"ekey {type}"
+        display_name = f"ekey {ekey_type}"
         self._attr_name = None
-        self._attr_suggested_object_id = f"ekey_{type}"
-        self._attr_unique_id = f"{type}-{port}"
+        self._attr_suggested_object_id = f"ekey_{ekey_type}"
+        self._attr_unique_id = f"{ekey_type}-{port}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{type}-{port}")},
+            identifiers={(DOMAIN, f"{ekey_type}-{port}")},
             manufacturer="ekey",
             name=display_name,
         )
 
         self._conf_port = port
-        self._conf_type = type
+        self._conf_type = ekey_type
         self._conf_delimiter = delimiter
         self._transport = None
 
