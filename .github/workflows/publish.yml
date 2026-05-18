@@ -4,6 +4,11 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to build (e.g. v0.1.0)"
+        required: true
 
 jobs:
   release_zip_file:
@@ -13,7 +18,9 @@ jobs:
       contents: write
     steps:
       - name: 🛍️ Checkout the repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -22,18 +29,17 @@ jobs:
 
       - name: 📝 Update manifest version
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"  # Remove 'v' prefix if it exists
-          sed -i 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' '${{ github.workspace }}/custom_components/ekeylegacy/manifest.json'
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}"
+          VERSION="${TAG#v}"  # Remove 'v' prefix if it exists
+          sed -i 's/"version": "[^"]*"/"version": "'"$VERSION"'"/' "${{ github.workspace }}/custom_components/ekeylegacy/manifest.json"
 
       - name: 🤐 Copy and Zip
-        if: ${{ github.event_name == 'release' }}
         run: |
-          cd '${{ github.workspace }}/custom_components/ekeylegacy'
+          cd "${{ github.workspace }}/custom_components/ekeylegacy"
           zip ekeylegacy.zip -r ./
 
       - name: ☁️ Upload zip to release
         uses: softprops/action-gh-release@v2.2.2
-        if: ${{ github.event_name == 'release' }}
         with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
           files: "${{ github.workspace }}/custom_components/ekeylegacy/ekeylegacy.zip"
