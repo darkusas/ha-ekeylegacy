@@ -7,6 +7,7 @@ from homeassistant.components.event import EventDeviceClass, EventEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PORT, CONF_TYPE
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -24,18 +25,21 @@ class EkeyLegacyAuthEvent(EventEntity):
 
     _attr_device_class = EventDeviceClass.BUTTON
     _attr_event_types = ["authenticated", "failed"]
+    _attr_has_entity_name = True
 
-    def __init__(self, port: int, type: str, delimiter: str) -> None:
+    def __init__(self, port: int, device_type: str, delimiter: str) -> None:
         """Initialize the Ekey (legacy) event entity."""
-        self._attr_name = f"ekey {type}"
-        self._attr_unique_id = f"{type}-{port}"
+        self._attr_name = None
+        self._attr_suggested_object_id = f"ekey_{device_type}"
+        self._attr_unique_id = f"{device_type}-{port}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{type}-{port}")},
+            identifiers={(DOMAIN, f"{device_type}-{port}")},
             manufacturer="ekey",
+            name=f"ekey {device_type}",
         )
 
         self._conf_port = port
-        self._conf_type = type
+        self._conf_type = device_type
         self._conf_delimiter = delimiter
         self._transport = None
 
@@ -45,8 +49,6 @@ class EkeyLegacyAuthEvent(EventEntity):
         self._transport, _ = await loop.create_datagram_endpoint(
             lambda: _EkeyUDPProtocol(self.hass, self),
             local_addr=("0.0.0.0", self._conf_port),
-            reuse_address=True,
-            reuse_port=True,
         )
 
     @callback
@@ -177,6 +179,11 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Ekey (legacy) event platform."""
+    _migrate_entity_id(
+        hass,
+        f"{config_entry.data[CONF_TYPE]}-{config_entry.data[CONF_PORT]}",
+        f"event.ekey_{config_entry.data[CONF_TYPE]}",
+    )
     async_add_entities(
         [
             EkeyLegacyAuthEvent(
@@ -186,3 +193,27 @@ async def async_setup_entry(
             )
         ]
     )
+
+
+@callback
+def _migrate_entity_id(
+    hass: HomeAssistant, unique_id: str, expected_entity_id: str
+) -> None:
+    """Rename legacy event entity IDs to the new `event.ekey_<type>` format."""
+    entity_registry = er.async_get(hass)
+    current_entity_id = entity_registry.async_get_entity_id("event", DOMAIN, unique_id)
+    if current_entity_id is None or current_entity_id == expected_entity_id:
+        return
+
+    try:
+        entity_registry.async_update_entity(
+            current_entity_id,
+            new_entity_id=expected_entity_id,
+        )
+    except ValueError:
+        _LOGGER.warning(
+            "Cannot migrate entity ID for %s from %s to %s because the target is already in use",
+            unique_id,
+            current_entity_id,
+            expected_entity_id,
+        )
