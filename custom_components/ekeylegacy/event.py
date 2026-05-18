@@ -40,6 +40,8 @@ class EkeyLegacyAuthEvent(EventEntity):
         self._transport, _ = await loop.create_datagram_endpoint(
             lambda: _EkeyUDPProtocol(self.hass, self),
             local_addr=("0.0.0.0", self._conf_port),
+            reuse_address=True,
+            reuse_port=True,
         )
 
     @callback
