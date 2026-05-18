@@ -27,20 +27,19 @@ class EkeyLegacyAuthEvent(EventEntity):
     _attr_event_types = ["authenticated", "failed"]
     _attr_has_entity_name = True
 
-    def __init__(self, port: int, ekey_type: str, delimiter: str) -> None:
+    def __init__(self, port: int, device_type: str, delimiter: str) -> None:
         """Initialize the Ekey (legacy) event entity."""
-        display_name = f"ekey {ekey_type}"
         self._attr_name = None
-        self._attr_suggested_object_id = f"ekey_{ekey_type}"
-        self._attr_unique_id = f"{ekey_type}-{port}"
+        self._attr_suggested_object_id = f"ekey_{device_type}"
+        self._attr_unique_id = f"{device_type}-{port}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{ekey_type}-{port}")},
+            identifiers={(DOMAIN, f"{device_type}-{port}")},
             manufacturer="ekey",
-            name=display_name,
+            name=f"ekey {device_type}",
         )
 
         self._conf_port = port
-        self._conf_type = ekey_type
+        self._conf_type = device_type
         self._conf_delimiter = delimiter
         self._transport = None
 
@@ -212,7 +211,7 @@ def _migrate_entity_id(
             new_entity_id=expected_entity_id,
         )
     except ValueError:
-        _LOGGER.debug(
+        _LOGGER.warning(
             "Cannot migrate entity ID for %s from %s to %s because the target is already in use",
             unique_id,
             current_entity_id,
