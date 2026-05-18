@@ -9,8 +9,8 @@
         },
         "data_description": {
           "port": "Port which should be opened to receive the payloads",
-          "delimiter": "Which character separates the information",
-          "type": "Protocol depends on ekey controller"
+          "delimiter": "Which character separates the information (ignored for rare)",
+          "type": "Protocol depends on ekey controller: home, multi or rare"
         }
       }
     },
