@@ -4,17 +4,6 @@ Home Assistant integration for ekey home or multi (legacy) fingerprint readers.
 
 This integration listens for UDP packets sent by ekey home or ekey multi devices and exposes them as Home Assistant **Event** entities. When a fingerprint is recognized (or rejected), an event is fired with details such as user, finger, scanner, relay, and action outcome.
 
-[![Static Badge](https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge&logo=homeassistantcommunitystore&logoColor=white)](https://github.com/hacs/integration) 
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/klein0r/ha-ekeylegacy/total?style=for-the-badge)
-![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/klein0r/ha-ekeylegacy?style=for-the-badge)
-
-![GitHub Release Date](https://img.shields.io/github/release-date-pre/klein0r/ha-ekeylegacy?style=for-the-badge&label=Latest%20Beta%20Release) [![GitHub Release](https://img.shields.io/github/v/release/klein0r/ha-ekeylegacy?include_prereleases&style=for-the-badge)](https://github.com/klein0r/ha-ekeylegacy/releases)
-
-![GitHub Release Date](https://img.shields.io/github/release-date/klein0r/ha-ekeylegacy?style=for-the-badge&label=Latest%20Release) [![GitHub Release](https://img.shields.io/github/v/release/klein0r/ha-ekeylegacy?style=for-the-badge)](https://github.com/klein0r/ha-ekeylegacy/releases)
-
-## Setup
-
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=klein0r&repository=ha-ekeylegacy&category=Integration)
 
 ## Configuration
 
