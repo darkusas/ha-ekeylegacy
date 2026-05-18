@@ -9,3 +9,4 @@ DEFAULT_DELIMITER = "_"
 
 TYPE_HOME = "home"
 TYPE_MULTI = "multi"
+TYPE_RARE = "rare"

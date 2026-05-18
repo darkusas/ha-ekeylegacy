@@ -10,9 +10,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_DELIMITER, DOMAIN
+from .const import CONF_DELIMITER, DOMAIN, TYPE_HOME, TYPE_MULTI, TYPE_RARE
 
 _LOGGER = logging.getLogger(__name__)
+
+RARE_PACKET_LENGTH = 72
+RARE_AUTHENTICATED_COMMAND = 0x88
+RARE_FAILED_COMMAND = 0x89
+
 
 class EkeyLegacyAuthEvent(EventEntity):
     """Representation of a Ekey (legacy) event entity."""
@@ -45,18 +50,28 @@ class EkeyLegacyAuthEvent(EventEntity):
         )
 
     @callback
-    def async_handle_event(self, message: str) -> None:
+    def async_handle_event(self, message: bytes) -> None:
         """Handle the Ekey (legacy) event."""
-        parts = message.strip().split(self._conf_delimiter)
+        parsed_event = self._parse_event(message)
+        if parsed_event is None:
+            return
 
-        _LOGGER.info(
-            "Received event '%s'",
-            message,
-        )
+        event_type, event_data = parsed_event
+        self._trigger_event(event_type, event_data)
 
-        is_successful = False
+        self.async_write_ha_state()
 
-        if self._conf_type == "home" and len(parts) == 6:
+    def _parse_event(self, message: bytes) -> tuple[str, dict[str, str]] | None:
+        """Parse an incoming event payload."""
+        if self._conf_type == TYPE_RARE:
+            return _parse_rare_message(message)
+
+        text_message = message.decode("ascii", errors="ignore").strip()
+        parts = text_message.split(self._conf_delimiter)
+
+        _LOGGER.info("Received event '%s'", text_message)
+
+        if self._conf_type == TYPE_HOME and len(parts) == 6:
             event_data = {
                 "type": parts[0],
                 "user": parts[1].lstrip("0"),
@@ -65,11 +80,9 @@ class EkeyLegacyAuthEvent(EventEntity):
                 "action": parts[4],
                 "relay": parts[5],
             }
+            return ("authenticated", event_data) if event_data["action"] == "1" else ("failed", event_data)
 
-            if event_data["action"] == "1":
-                is_successful = True
-
-        elif self._conf_type == "multi" and len(parts) == 10:
+        if self._conf_type == TYPE_MULTI and len(parts) == 10:
             event_data = {
                 "type": parts[0],
                 "user": parts[1].lstrip("0"),
@@ -80,21 +93,17 @@ class EkeyLegacyAuthEvent(EventEntity):
                 "scanner": parts[6],
                 "scanner_name": parts[7].lstrip("-"),
                 "action": parts[8],
-                "digital_input": parts[8],
+                "digital_input": parts[9],
             }
+            return ("authenticated", event_data) if event_data["action"] == "1" else ("failed", event_data)
 
-            if event_data["action"] == "1":
-                is_successful = True
-
-        else:
-            return
-
-        if is_successful:
-            self._trigger_event("authenticated", event_data)
-        else:
-            self._trigger_event("failed", event_data)
-
-        self.async_write_ha_state()
+        _LOGGER.warning(
+            "Ignored invalid %s payload on port %s: %s",
+            self._conf_type,
+            self._conf_port,
+            text_message,
+        )
+        return None
 
     async def async_will_remove_from_hass(self) -> None:
         """Unregister the Ekey (legacy) event."""
@@ -111,8 +120,49 @@ class _EkeyUDPProtocol(asyncio.DatagramProtocol):
         self.entity = entity
 
     def datagram_received(self, data: bytes, addr) -> None:
-        message = data.decode("ascii", errors="ignore")
-        self.entity.async_handle_event(message)
+        self.entity.async_handle_event(data)
+
+
+def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
+    """Parse a binary ekey RARE protocol packet."""
+    if len(message) < RARE_PACKET_LENGTH:
+        _LOGGER.warning("Ignored short rare packet with %s bytes", len(message))
+        return None
+
+    version = int.from_bytes(message[0:4], byteorder="big", signed=True)
+    command = int.from_bytes(message[4:8], byteorder="big", signed=True)
+
+    if version != 3:
+        _LOGGER.warning("Ignored rare packet with unsupported version %s", version)
+        return None
+
+    if command not in (RARE_AUTHENTICATED_COMMAND, RARE_FAILED_COMMAND):
+        _LOGGER.warning("Ignored rare packet with unsupported command 0x%s", command.to_bytes(4, "big", signed=True).hex())
+        return None
+
+    event_type = "authenticated" if command == RARE_AUTHENTICATED_COMMAND else "failed"
+    event_data = {
+        "version": str(version),
+        "command": str(command),
+        "action": "open" if event_type == "authenticated" else "reject",
+        "terminal_id": str(int.from_bytes(message[8:12], byteorder="big", signed=True)),
+        "terminal_serial": _decode_rare_text_field(message[12:26]),
+        "relay": str(message[26]),
+        "user": str(int.from_bytes(message[28:32], byteorder="big", signed=True)),
+        "finger": str(int.from_bytes(message[32:36], byteorder="big", signed=True)),
+        "event": _decode_rare_text_field(message[36:52]),
+        "timestamp": _decode_rare_text_field(message[52:68]),
+        "name": str(int.from_bytes(message[68:70], byteorder="big", signed=False)),
+        "personal_id": str(int.from_bytes(message[70:72], byteorder="big", signed=False)),
+    }
+
+    _LOGGER.info("Received rare event '%s' for terminal '%s'", event_data["action"], event_data["terminal_serial"])
+    return event_type, event_data
+
+
+def _decode_rare_text_field(value: bytes) -> str:
+    """Decode a fixed-length ASCII field from a rare packet."""
+    return value.decode("ascii", errors="ignore").rstrip("\x00 ").strip()
 
 
 async def async_setup_entry(

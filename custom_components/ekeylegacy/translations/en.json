@@ -14,9 +14,9 @@
                     "type": "Device type"
                 },
                 "data_description": {
-                    "delimiter": "Which character separates the information",
+                    "delimiter": "Which character separates the information (ignored for rare)",
                     "port": "Port which should be opened to receive the payloads",
-                    "type": "Home, Multi or rare protocol"
+                    "type": "Home, multi or rare protocol"
                 }
             }
         }

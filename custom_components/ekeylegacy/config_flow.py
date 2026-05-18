@@ -16,6 +16,7 @@ from .const import (
     DOMAIN,
     TYPE_HOME,
     TYPE_MULTI,
+    TYPE_RARE,
 )
 
 SCHEMA_DEVICE = vol.Schema(
@@ -26,6 +27,7 @@ SCHEMA_DEVICE = vol.Schema(
             (
                 TYPE_HOME,
                 TYPE_MULTI,
+                TYPE_RARE,
             )
         ),
     }
