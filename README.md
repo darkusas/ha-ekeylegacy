@@ -94,7 +94,7 @@ digital_input: "0"
 
 ### ekey rare
 
-Select `rare` when the controller sends the binary RARE protocol described in `/home/runner/work/ha-ekeylegacy/ha-ekeylegacy/custom_components/ekeylegacy/doc/rare_protocol.md`.
+Select `rare` when the controller sends the binary RARE protocol described in `custom_components/ekeylegacy/doc/rare_protocol.md`.
 
 The integration expects a fixed 72-byte packet with:
 

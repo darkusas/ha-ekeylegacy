@@ -137,7 +137,9 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         return None
 
     if command not in (RARE_AUTHENTICATED_COMMAND, RARE_FAILED_COMMAND):
-        _LOGGER.warning("Ignored rare packet with unsupported command 0x%s", command.to_bytes(4, "big", signed=True).hex())
+        _LOGGER.warning(
+            "Ignored rare packet with unsupported command %s", f"{command:#x}"
+        )
         return None
 
     event_type = "authenticated" if command == RARE_AUTHENTICATED_COMMAND else "failed"
