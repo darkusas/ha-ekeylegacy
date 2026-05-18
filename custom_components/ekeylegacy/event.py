@@ -129,8 +129,8 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         _LOGGER.warning("Ignored short rare packet with %s bytes", len(message))
         return None
 
-    version = int.from_bytes(message[0:4], byteorder="big", signed=True)
-    command = int.from_bytes(message[4:8], byteorder="big", signed=True)
+    version = int.from_bytes(message[0:4], byteorder="big", signed=False)
+    command = int.from_bytes(message[4:8], byteorder="big", signed=False)
 
     if version != 3:
         _LOGGER.warning("Ignored rare packet with unsupported version %s", version)
@@ -147,11 +147,15 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         "version": str(version),
         "command": str(command),
         "action": "open" if event_type == "authenticated" else "reject",
-        "terminal_id": str(int.from_bytes(message[8:12], byteorder="big", signed=True)),
+        "terminal_id": str(
+            int.from_bytes(message[8:12], byteorder="big", signed=False)
+        ),
         "terminal_serial": _decode_rare_text_field(message[12:26]),
         "relay": str(message[26]),
-        "user": str(int.from_bytes(message[28:32], byteorder="big", signed=True)),
-        "finger": str(int.from_bytes(message[32:36], byteorder="big", signed=True)),
+        "user": str(int.from_bytes(message[28:32], byteorder="big", signed=False)),
+        "finger": str(
+            int.from_bytes(message[32:36], byteorder="big", signed=False)
+        ),
         "event": _decode_rare_text_field(message[36:52]),
         "timestamp": _decode_rare_text_field(message[52:68]),
         "name": str(int.from_bytes(message[68:70], byteorder="big", signed=False)),
