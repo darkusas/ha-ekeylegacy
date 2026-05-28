@@ -91,9 +91,6 @@ class EkeyLegacyAuthEvent(EventEntity):
 
     def _should_fire_bus_event(self, event_type: str, event_data: dict[str, str]) -> bool:
         """Return whether the Home Assistant bus event should be emitted."""
-        if event_type not in self._attr_event_types:
-            return False
-
         event_signature = (event_type, tuple(sorted(event_data.items())))
         now = time.monotonic()
         if (
