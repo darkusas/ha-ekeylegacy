@@ -11,13 +11,11 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_DELIMITER, DOMAIN, TYPE_HOME, TYPE_MULTI, TYPE_RARE
+from .const import CONF_DELIMITER, CONF_RARE_AUTH_CMD, CONF_RARE_FAIL_CMD, DEFAULT_RARE_AUTH_CMD, DEFAULT_RARE_FAIL_CMD, DOMAIN, TYPE_HOME, TYPE_MULTI, TYPE_RARE
 
 _LOGGER = logging.getLogger(__name__)
 
 RARE_PACKET_LENGTH = 72
-RARE_AUTHENTICATED_COMMAND = 0x88
-RARE_FAILED_COMMAND = 0x89
 
 
 class EkeyLegacyAuthEvent(EventEntity):
@@ -27,8 +25,11 @@ class EkeyLegacyAuthEvent(EventEntity):
     _attr_event_types = ["authenticated", "failed"]
     _attr_has_entity_name = True
 
-    def __init__(self, port: int, device_type: str, delimiter: str) -> None:
+    def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize the Ekey (legacy) event entity."""
+        port: int = config_entry.data[CONF_PORT]
+        device_type: str = config_entry.data[CONF_TYPE]
+
         self._attr_name = None
         self._attr_suggested_object_id = f"ekey_{device_type}"
         self._attr_unique_id = f"{device_type}-{port}"
@@ -40,7 +41,9 @@ class EkeyLegacyAuthEvent(EventEntity):
 
         self._conf_port = port
         self._conf_type = device_type
-        self._conf_delimiter = delimiter
+        self._conf_delimiter = config_entry.data[CONF_DELIMITER]
+        self._conf_rare_auth_cmd = config_entry.data.get(CONF_RARE_AUTH_CMD, DEFAULT_RARE_AUTH_CMD)
+        self._conf_rare_fail_cmd = config_entry.data.get(CONF_RARE_FAIL_CMD, DEFAULT_RARE_FAIL_CMD)
         self._transport = None
 
     async def async_added_to_hass(self) -> None:
@@ -66,7 +69,7 @@ class EkeyLegacyAuthEvent(EventEntity):
     def _parse_event(self, message: bytes) -> tuple[str, dict[str, str]] | None:
         """Parse an incoming event payload."""
         if self._conf_type == TYPE_RARE:
-            return _parse_rare_message(message)
+            return _parse_rare_message(message, self._conf_rare_auth_cmd, self._conf_rare_fail_cmd)
 
         text_message = message.decode("ascii", errors="ignore").strip()
         parts = text_message.split(self._conf_delimiter)
@@ -125,7 +128,11 @@ class _EkeyUDPProtocol(asyncio.DatagramProtocol):
         self.entity.async_handle_event(data)
 
 
-def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
+def _parse_rare_message(
+    message: bytes,
+    auth_command: int = DEFAULT_RARE_AUTH_CMD,
+    fail_command: int = DEFAULT_RARE_FAIL_CMD,
+) -> tuple[str, dict[str, str]] | None:
     """Parse a binary ekey RARE protocol packet."""
     if len(message) < RARE_PACKET_LENGTH:
         _LOGGER.warning("Ignored short rare packet with %s bytes", len(message))
@@ -147,8 +154,6 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         )
         return None
 
-    _LOGGER.debug("Detected rare packet byte order: %s", byteorder)
-
     def _u32(buf: bytes) -> int:
         return int.from_bytes(buf, byteorder=byteorder, signed=False)
 
@@ -158,13 +163,17 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
     version = _u32(message[0:4])
     command = _u32(message[4:8])
 
-    if command not in (RARE_AUTHENTICATED_COMMAND, RARE_FAILED_COMMAND):
+    if command == auth_command:
+        event_type = "authenticated"
+    elif command == fail_command:
+        event_type = "failed"
+    else:
         _LOGGER.warning(
-            "Ignored rare packet with unsupported command %s", f"{command:#x}"
+            "Received rare packet with unknown command %s – treating as failed",
+            f"{command:#x}",
         )
-        return None
+        event_type = "failed"
 
-    event_type = "authenticated" if command == RARE_AUTHENTICATED_COMMAND else "failed"
     event_data = {
         "version": str(version),
         "command": str(command),
@@ -207,11 +216,7 @@ async def async_setup_entry(
     )
     async_add_entities(
         [
-            EkeyLegacyAuthEvent(
-                config_entry.data[CONF_PORT],
-                config_entry.data[CONF_TYPE],
-                config_entry.data[CONF_DELIMITER],
-            )
+            EkeyLegacyAuthEvent(config_entry)
         ]
     )
 
