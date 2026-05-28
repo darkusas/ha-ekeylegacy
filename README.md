@@ -15,6 +15,8 @@ Whenever the controller reports a scan result, the entity fires one of these eve
 
 The integration uses the Home Assistant event type `ekeylegacy_event`.
 
+It also provides a YAML-only `binary_sensor` platform that can turn matching ekey events into short pulse sensors.
+
 ## Installation
 
 1. Install the integration with HACS.
@@ -174,6 +176,52 @@ automation:
         data:
           name: "ekey"
           message: "User 7 authenticated on the RARE controller"
+```
+
+## YAML binary sensors (trigger-like pulses)
+
+You can create `binary_sensor` entities that become `on` for a short time whenever an `ekeylegacy_event` matches configured attributes.
+
+- Default pulse time: `2` seconds
+- Custom pulse time: set `duration` (seconds)
+- Matching keys: one, many, or all event attributes (for example `event_type`, `terminal_serial`, `relay`, `user`, `finger`, `action`, ...)
+
+### Example - single matcher (all successful authentications)
+
+```yaml
+binary_sensor:
+  - platform: ekeylegacy
+    name: "ekey authenticated pulse"
+    event_type: authenticated
+```
+
+### Example - multiple matchers for RARE events
+
+```yaml
+binary_sensor:
+  - platform: ekeylegacy
+    name: "RARE terminal user 7 relay 0"
+    duration: 5
+    event_type: authenticated
+    terminal_serial: "80123456789012"
+    user: "7"
+    relay: "0"
+```
+
+### Example - strict matcher using many fields
+
+```yaml
+binary_sensor:
+  - platform: ekeylegacy
+    name: "Exact RARE trigger"
+    duration: 3
+    event_type: failed
+    terminal_serial: "80123456789012"
+    terminal_id: "1"
+    user: "0"
+    finger: "13"
+    relay: "0"
+    action: reject
 ```
 
 ## Troubleshooting
