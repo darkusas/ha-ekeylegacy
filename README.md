@@ -101,7 +101,7 @@ Select `rare` when the controller sends the binary RARE protocol described in `c
 The integration expects a fixed 72-byte packet with:
 
 - version `3`
-- command `136` (`0x88`, accepted finger) or `137` (`0x89`, rejected finger)
+- command `1` (accepted finger) or `19` (rejected finger)
 - terminal ID and terminal serial
 - relay ID
 - user ID
@@ -114,7 +114,7 @@ Generated event payload:
 
 ```yaml
 version: "3"
-command: "136"
+command: "1"
 action: "open"
 terminal_id: "1"
 terminal_serial: "80123456789012"
@@ -129,8 +129,8 @@ personal_id: "0"
 
 RARE event mapping:
 
-- `command = 136` → `authenticated`
-- `command = 137` → `failed`
+- `command = 1` → `authenticated`
+- `command = 19` → `failed`
 
 Finger values are reported exactly as sent by the controller. In the original ekey documentation:
 
@@ -229,7 +229,7 @@ binary_sensor:
 - No events arrive: verify the Home Assistant IP, UDP port, firewall rules, and selected protocol type.
 - Wrong parsing: check whether the controller uses `home`, `multi`, or `rare`.
 - Text payloads are ignored: confirm the configured delimiter matches the controller setting.
-- RARE payloads are ignored: confirm the controller sends protocol version `3` and command `136` or `137`.
+- RARE payloads are ignored: confirm the controller sends protocol version `3` and command `1` or `19`.
 
 ### Debug logging for full RARE events
 

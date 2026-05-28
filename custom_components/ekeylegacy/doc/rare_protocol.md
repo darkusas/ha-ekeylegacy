@@ -5,7 +5,7 @@ The rare protocol can only be used in ekey home systems. This protocol has the f
 |Position| Data set   |Data type |Values and meaning|
 |-|-----------|-------------------------------|-----------------------------|
 |1| nVersion  | Long | 3 |
-|2| nCmd | Long | 0x88 = Decimal 136.. Open door with finger;  0x89 = Decimal 137.. Wrong or unrecognized finger |
+|2| nCmd | Long | Decimal 1.. Open door with finger; Decimal 19.. Wrong or unrecognized finger |
 |3| nTerminalID | Long | Address of the finger scanner.  |
 |4| strTerminalSerial | Char[14] | Terminal Serial number as a string |
 |5| nRelayID | Char[1] | 0.. Relay 1; 1.. Relay 2; 2.. Relay 3; 15.. Double relay |
