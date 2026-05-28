@@ -231,6 +231,17 @@ binary_sensor:
 - Text payloads are ignored: confirm the configured delimiter matches the controller setting.
 - RARE payloads are ignored: confirm the controller sends protocol version `3` and command `136` or `137`.
 
+### Debug logging for full RARE events
+
+If you enable debug logging for this integration in `configuration.yaml`, every parsed RARE event is logged with all parsed fields.
+
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.ekeylegacy.event: debug
+```
+
 ## License
 
 The MIT License (MIT)
