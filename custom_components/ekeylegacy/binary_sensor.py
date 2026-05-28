@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity, PLATFORM_SCHEMA
-from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_NAME, CONF_PLATFORM
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -16,7 +16,7 @@ from homeassistant.helpers.event import async_call_later
 from .const import CONF_DURATION, DEFAULT_DURATION, EVENT_TYPE_NAME
 
 _DEFAULT_NAME = "ekey trigger"
-_RESERVED_CONFIG_KEYS = {CONF_NAME, CONF_DURATION}
+_RESERVED_CONFIG_KEYS = {CONF_NAME, CONF_DURATION, CONF_PLATFORM}
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
