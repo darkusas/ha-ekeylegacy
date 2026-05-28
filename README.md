@@ -200,7 +200,7 @@ binary_sensor:
 ```yaml
 binary_sensor:
   - platform: ekeylegacy
-    name: "Rare terminal user 7 relay 0"
+    name: "RARE terminal user 7 relay 0"
     duration: 5
     event_type: authenticated
     terminal_serial: "80123456789012"
@@ -213,7 +213,7 @@ binary_sensor:
 ```yaml
 binary_sensor:
   - platform: ekeylegacy
-    name: "Exact rare trigger"
+    name: "Exact RARE trigger"
     duration: 3
     event_type: failed
     terminal_serial: "80123456789012"
