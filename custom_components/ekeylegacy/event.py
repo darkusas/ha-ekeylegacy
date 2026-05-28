@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 
 from homeassistant.components.event import EventDeviceClass, EventEntity
 from homeassistant.config_entries import ConfigEntry
@@ -11,11 +12,23 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_DELIMITER, CONF_RARE_AUTH_CMD, CONF_RARE_FAIL_CMD, DEFAULT_RARE_AUTH_CMD, DEFAULT_RARE_FAIL_CMD, DOMAIN, EVENT_TYPE_NAME, TYPE_HOME, TYPE_MULTI, TYPE_RARE
+from .const import (
+    CONF_DELIMITER,
+    CONF_RARE_AUTH_CMD,
+    CONF_RARE_FAIL_CMD,
+    DEFAULT_RARE_AUTH_CMD,
+    DEFAULT_RARE_FAIL_CMD,
+    DOMAIN,
+    EVENT_TYPE_NAME,
+    TYPE_HOME,
+    TYPE_MULTI,
+    TYPE_RARE,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 RARE_PACKET_LENGTH = 72
+BUS_EVENT_DEBOUNCE_SECONDS = 1.0
 
 
 class EkeyLegacyAuthEvent(EventEntity):
@@ -45,6 +58,8 @@ class EkeyLegacyAuthEvent(EventEntity):
         self._conf_rare_auth_cmd = config_entry.data.get(CONF_RARE_AUTH_CMD, DEFAULT_RARE_AUTH_CMD)
         self._conf_rare_fail_cmd = config_entry.data.get(CONF_RARE_FAIL_CMD, DEFAULT_RARE_FAIL_CMD)
         self._transport = None
+        self._last_bus_event: tuple[str, tuple[tuple[str, str], ...]] | None = None
+        self._last_bus_event_at = 0.0
 
     async def async_added_to_hass(self) -> None:
         """Register callbacks."""
@@ -63,15 +78,34 @@ class EkeyLegacyAuthEvent(EventEntity):
 
         event_type, event_data = parsed_event
         self._trigger_event(event_type, event_data)
-        self.hass.bus.async_fire(
-            EVENT_TYPE_NAME,
-            {
-                "event_type": event_type,
-                **event_data,
-            },
-        )
+        if self._should_fire_bus_event(event_type, event_data):
+            self.hass.bus.async_fire(
+                EVENT_TYPE_NAME,
+                {
+                    "event_type": event_type,
+                    **event_data,
+                },
+            )
 
         self.async_write_ha_state()
+
+    def _should_fire_bus_event(self, event_type: str, event_data: dict[str, str]) -> bool:
+        """Return whether the Home Assistant bus event should be emitted."""
+        if event_type not in self._attr_event_types:
+            return False
+
+        event_signature = (event_type, tuple(sorted(event_data.items())))
+        now = time.monotonic()
+        if (
+            event_signature == self._last_bus_event
+            and now - self._last_bus_event_at < BUS_EVENT_DEBOUNCE_SECONDS
+        ):
+            _LOGGER.debug("Coalesced duplicate bus event '%s'", event_type)
+            return False
+
+        self._last_bus_event = event_signature
+        self._last_bus_event_at = now
+        return True
 
     def _parse_event(self, message: bytes) -> tuple[str, dict[str, str]] | None:
         """Parse an incoming event payload."""
