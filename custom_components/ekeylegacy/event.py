@@ -11,7 +11,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_DELIMITER, CONF_RARE_AUTH_CMD, CONF_RARE_FAIL_CMD, DEFAULT_RARE_AUTH_CMD, DEFAULT_RARE_FAIL_CMD, DOMAIN, TYPE_HOME, TYPE_MULTI, TYPE_RARE
+from .const import CONF_DELIMITER, CONF_RARE_AUTH_CMD, CONF_RARE_FAIL_CMD, DEFAULT_RARE_AUTH_CMD, DEFAULT_RARE_FAIL_CMD, DOMAIN, EVENT_TYPE_NAME, TYPE_HOME, TYPE_MULTI, TYPE_RARE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,6 +63,13 @@ class EkeyLegacyAuthEvent(EventEntity):
 
         event_type, event_data = parsed_event
         self._trigger_event(event_type, event_data)
+        self.hass.bus.async_fire(
+            EVENT_TYPE_NAME,
+            {
+                "event_type": event_type,
+                **event_data,
+            },
+        )
 
         self.async_write_ha_state()
 
