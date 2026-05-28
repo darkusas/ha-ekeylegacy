@@ -164,7 +164,12 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         "personal_id": str(int.from_bytes(message[70:72], byteorder="big", signed=False)),
     }
 
-    _LOGGER.info("Received rare event '%s' for terminal '%s'", event_data["action"], event_data["terminal_serial"])
+    _LOGGER.info(
+        "Received rare event '%s' for terminal '%s'",
+        event_data["action"],
+        event_data["terminal_serial"],
+    )
+    _LOGGER.debug("Parsed rare event data: %s", event_data)
     return event_type, event_data
 
 
