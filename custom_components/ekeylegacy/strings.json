@@ -13,8 +13,8 @@
           "port": "Port which should be opened to receive the payloads",
           "delimiter": "Which character separates the information (ignored for rare)",
           "type": "Protocol depends on ekey controller: home, multi or rare",
-          "rare_auth_cmd": "Command value that means a successful authentication (rare protocol only, default 136 = 0x88)",
-          "rare_fail_cmd": "Command value that means a failed authentication (rare protocol only, default 137 = 0x89)"
+          "rare_auth_cmd": "Command value that means a successful authentication (rare protocol only, default 1)",
+          "rare_fail_cmd": "Command value that means a failed authentication (rare protocol only, default 19)"
         }
       }
     },
