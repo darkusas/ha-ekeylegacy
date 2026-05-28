@@ -138,8 +138,13 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
             break
 
     if byteorder is None:
-        version = int.from_bytes(message[0:4], byteorder="big", signed=False)
-        _LOGGER.warning("Ignored rare packet with unsupported version %s", version)
+        version_be = int.from_bytes(message[0:4], byteorder="big", signed=False)
+        version_le = int.from_bytes(message[0:4], byteorder="little", signed=False)
+        _LOGGER.warning(
+            "Ignored rare packet with unsupported version %s (big-endian) / %s (little-endian)",
+            version_be,
+            version_le,
+        )
         return None
 
     _LOGGER.debug("Detected rare packet byte order: %s", byteorder)
