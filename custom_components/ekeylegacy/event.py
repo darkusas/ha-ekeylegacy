@@ -131,12 +131,32 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         _LOGGER.warning("Ignored short rare packet with %s bytes", len(message))
         return None
 
-    version = int.from_bytes(message[0:4], byteorder="big", signed=False)
-    command = int.from_bytes(message[4:8], byteorder="big", signed=False)
+    byteorder: str | None = None
+    for order in ("big", "little"):
+        if int.from_bytes(message[0:4], byteorder=order, signed=False) == 3:
+            byteorder = order
+            break
 
-    if version != 3:
-        _LOGGER.warning("Ignored rare packet with unsupported version %s", version)
+    if byteorder is None:
+        version_be = int.from_bytes(message[0:4], byteorder="big", signed=False)
+        version_le = int.from_bytes(message[0:4], byteorder="little", signed=False)
+        _LOGGER.warning(
+            "Ignored rare packet with unsupported version %s (big-endian) / %s (little-endian)",
+            version_be,
+            version_le,
+        )
         return None
+
+    _LOGGER.debug("Detected rare packet byte order: %s", byteorder)
+
+    def _u32(buf: bytes) -> int:
+        return int.from_bytes(buf, byteorder=byteorder, signed=False)
+
+    def _u16(buf: bytes) -> int:
+        return int.from_bytes(buf, byteorder=byteorder, signed=False)
+
+    version = _u32(message[0:4])
+    command = _u32(message[4:8])
 
     if command not in (RARE_AUTHENTICATED_COMMAND, RARE_FAILED_COMMAND):
         _LOGGER.warning(
@@ -149,19 +169,15 @@ def _parse_rare_message(message: bytes) -> tuple[str, dict[str, str]] | None:
         "version": str(version),
         "command": str(command),
         "action": "open" if event_type == "authenticated" else "reject",
-        "terminal_id": str(
-            int.from_bytes(message[8:12], byteorder="big", signed=False)
-        ),
+        "terminal_id": str(_u32(message[8:12])),
         "terminal_serial": _decode_rare_text_field(message[12:26]),
         "relay": str(message[26]),
-        "user": str(int.from_bytes(message[28:32], byteorder="big", signed=False)),
-        "finger": str(
-            int.from_bytes(message[32:36], byteorder="big", signed=False)
-        ),
+        "user": str(_u32(message[28:32])),
+        "finger": str(_u32(message[32:36])),
         "event": _decode_rare_text_field(message[36:52]),
         "timestamp": _decode_rare_text_field(message[52:68]),
-        "name": str(int.from_bytes(message[68:70], byteorder="big", signed=False)),
-        "personal_id": str(int.from_bytes(message[70:72], byteorder="big", signed=False)),
+        "name": str(_u16(message[68:70])),
+        "personal_id": str(_u16(message[70:72])),
     }
 
     _LOGGER.info(
