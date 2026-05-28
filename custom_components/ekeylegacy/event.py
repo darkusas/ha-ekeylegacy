@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import time
 
 from homeassistant.components.event import EventDeviceClass, EventEntity
 from homeassistant.config_entries import ConfigEntry
@@ -29,6 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 RARE_PACKET_LENGTH = 72
 BUS_EVENT_DEBOUNCE_SECONDS = 1.0
+EventSignature = tuple[str, tuple[tuple[str, str], ...]]
 
 
 class EkeyLegacyAuthEvent(EventEntity):
@@ -58,7 +58,7 @@ class EkeyLegacyAuthEvent(EventEntity):
         self._conf_rare_auth_cmd = config_entry.data.get(CONF_RARE_AUTH_CMD, DEFAULT_RARE_AUTH_CMD)
         self._conf_rare_fail_cmd = config_entry.data.get(CONF_RARE_FAIL_CMD, DEFAULT_RARE_FAIL_CMD)
         self._transport = None
-        self._last_bus_event_signature: tuple[str, tuple[tuple[str, str], ...]] | None = None
+        self._last_bus_event_signature: EventSignature | None = None
         self._last_bus_event_at = 0.0
 
     async def async_added_to_hass(self) -> None:
@@ -92,7 +92,7 @@ class EkeyLegacyAuthEvent(EventEntity):
     def _should_fire_bus_event(self, event_type: str, event_data: dict[str, str]) -> bool:
         """Return whether the Home Assistant bus event should be emitted."""
         event_signature = (event_type, tuple(sorted(event_data.items())))
-        now = time.monotonic()
+        now = self.hass.loop.time()
         if (
             event_signature == self._last_bus_event_signature
             and now - self._last_bus_event_at < BUS_EVENT_DEBOUNCE_SECONDS
