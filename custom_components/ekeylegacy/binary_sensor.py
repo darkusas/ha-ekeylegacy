@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity, PLATFORM_SCHEMA
 from homeassistant.const import CONF_NAME
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later
@@ -34,11 +33,9 @@ async def async_setup_platform(
     hass: HomeAssistant,
     config: dict[str, Any],
     async_add_entities: AddEntitiesCallback,
-    discovery_info: dict[str, Any] | None = None,
+    _discovery_info: dict[str, Any] | None = None,
 ) -> None:
     """Set up ekey legacy binary sensor from YAML."""
-    del discovery_info
-
     matchers = {
         key: str(value)
         for key, value in config.items()
@@ -73,7 +70,7 @@ class EkeyLegacyTriggerBinarySensor(BinarySensorEntity):
         self._pulse_seconds = pulse_seconds
         self._matchers = matchers
         self._is_on = False
-        self._cancel_turn_off: Callable[[], None] | None = None
+        self._cancel_turn_off: CALLBACK_TYPE | None = None
 
     @property
     def is_on(self) -> bool:
