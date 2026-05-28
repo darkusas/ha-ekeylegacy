@@ -11,8 +11,12 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_DELIMITER,
+    CONF_RARE_AUTH_CMD,
+    CONF_RARE_FAIL_CMD,
     DEFAULT_DELIMITER,
     DEFAULT_PORT,
+    DEFAULT_RARE_AUTH_CMD,
+    DEFAULT_RARE_FAIL_CMD,
     DOMAIN,
     TYPE_HOME,
     TYPE_MULTI,
@@ -29,6 +33,12 @@ SCHEMA_DEVICE = vol.Schema(
                 TYPE_MULTI,
                 TYPE_RARE,
             )
+        ),
+        vol.Optional(CONF_RARE_AUTH_CMD, default=DEFAULT_RARE_AUTH_CMD): vol.All(
+            vol.Coerce(int), vol.Range(min=0, max=0xFFFFFFFF)
+        ),
+        vol.Optional(CONF_RARE_FAIL_CMD, default=DEFAULT_RARE_FAIL_CMD): vol.All(
+            vol.Coerce(int), vol.Range(min=0, max=0xFFFFFFFF)
         ),
     }
 )
