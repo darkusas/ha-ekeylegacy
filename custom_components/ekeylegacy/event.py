@@ -58,7 +58,7 @@ class EkeyLegacyAuthEvent(EventEntity):
         self._conf_rare_auth_cmd = config_entry.data.get(CONF_RARE_AUTH_CMD, DEFAULT_RARE_AUTH_CMD)
         self._conf_rare_fail_cmd = config_entry.data.get(CONF_RARE_FAIL_CMD, DEFAULT_RARE_FAIL_CMD)
         self._transport = None
-        self._last_bus_event: tuple[str, tuple[tuple[str, str], ...]] | None = None
+        self._last_bus_event_signature: tuple[str, tuple[tuple[str, str], ...]] | None = None
         self._last_bus_event_at = 0.0
 
     async def async_added_to_hass(self) -> None:
@@ -94,13 +94,13 @@ class EkeyLegacyAuthEvent(EventEntity):
         event_signature = (event_type, tuple(sorted(event_data.items())))
         now = time.monotonic()
         if (
-            event_signature == self._last_bus_event
+            event_signature == self._last_bus_event_signature
             and now - self._last_bus_event_at < BUS_EVENT_DEBOUNCE_SECONDS
         ):
             _LOGGER.debug("Coalesced duplicate bus event '%s'", event_type)
             return False
 
-        self._last_bus_event = event_signature
+        self._last_bus_event_signature = event_signature
         self._last_bus_event_at = now
         return True
 
