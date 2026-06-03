@@ -185,6 +185,7 @@ You can create `binary_sensor` entities that become `on` for a short time whenev
 - Default pulse time: `2` seconds
 - Custom pulse time: set `duration` (seconds)
 - Custom icon: set `icon` (for example `mdi:fingerprint`)
+- Unique ID: set `unique_id` (or let integration auto-generate it)
 - Matching keys: one, many, or all event attributes (for example `event_type`, `terminal_serial`, `relay`, `user`, `finger`, `action`, ...)
 
 ### Example - single matcher (all successful authentications)
@@ -202,6 +203,7 @@ binary_sensor:
 binary_sensor:
   - platform: ekeylegacy
     name: "RARE terminal user 7 relay 0"
+    unique_id: "rare_terminal_7_relay_0"
     duration: 5
     icon: mdi:fingerprint
     event_type: authenticated
@@ -209,6 +211,8 @@ binary_sensor:
     user: "7"
     relay: "0"
 ```
+
+`unique_id` is required for Home Assistant UI management features such as assigning an `Area`. If you omit it, this integration generates a stable `unique_id` automatically.
 
 ### Example - strict matcher using many fields
 

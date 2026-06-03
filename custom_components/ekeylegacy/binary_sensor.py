@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity, PLATFORM_SCHEMA
-from homeassistant.const import CONF_ICON, CONF_NAME, CONF_PLATFORM
+from homeassistant.const import CONF_ICON, CONF_NAME, CONF_PLATFORM, CONF_UNIQUE_ID
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -16,7 +18,13 @@ from homeassistant.helpers.event import async_call_later
 from .const import CONF_DURATION, DEFAULT_DURATION, EVENT_TYPE_NAME
 
 _DEFAULT_NAME = "ekey trigger"
-_RESERVED_CONFIG_KEYS = {CONF_NAME, CONF_DURATION, CONF_ICON, CONF_PLATFORM}
+_RESERVED_CONFIG_KEYS = {
+    CONF_NAME,
+    CONF_DURATION,
+    CONF_ICON,
+    CONF_UNIQUE_ID,
+    CONF_PLATFORM,
+}
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -25,9 +33,25 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
             vol.Coerce(float), vol.Range(min=0.1)
         ),
         vol.Optional(CONF_ICON): cv.icon,
+        vol.Optional(CONF_UNIQUE_ID): cv.string,
     },
     extra=vol.ALLOW_EXTRA,
 )
+
+
+def _build_auto_unique_id(
+    name: str, pulse_seconds: float, matchers: dict[str, str]
+) -> str:
+    """Build stable fallback unique_id from the YAML sensor configuration."""
+    source = {
+        "name": name,
+        "duration": pulse_seconds,
+        "matchers": dict(sorted(matchers.items())),
+    }
+    digest = hashlib.sha1(
+        json.dumps(source, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    return f"ekeylegacy_{digest[:16]}"
 
 
 async def async_setup_platform(
@@ -42,6 +66,11 @@ async def async_setup_platform(
         for key, value in config.items()
         if key not in _RESERVED_CONFIG_KEYS
     }
+    unique_id = config.get(CONF_UNIQUE_ID) or _build_auto_unique_id(
+        name=config[CONF_NAME],
+        pulse_seconds=config[CONF_DURATION],
+        matchers=matchers,
+    )
 
     async_add_entities(
         [
@@ -49,6 +78,7 @@ async def async_setup_platform(
                 name=config[CONF_NAME],
                 pulse_seconds=config[CONF_DURATION],
                 icon=config.get(CONF_ICON),
+                unique_id=unique_id,
                 matchers=matchers,
             )
         ]
@@ -66,11 +96,13 @@ class EkeyLegacyTriggerBinarySensor(BinarySensorEntity):
         name: str,
         pulse_seconds: float,
         icon: str | None,
+        unique_id: str,
         matchers: dict[str, str],
     ) -> None:
         """Initialize the trigger binary sensor."""
         self._attr_name = name
         self._attr_icon = icon
+        self._attr_unique_id = unique_id
         self._pulse_seconds = pulse_seconds
         self._matchers = matchers
         self._is_on = False
