@@ -184,6 +184,7 @@ You can create `binary_sensor` entities that become `on` for a short time whenev
 
 - Default pulse time: `2` seconds
 - Custom pulse time: set `duration` (seconds)
+- Custom icon: set `icon` (for example `mdi:fingerprint`)
 - Matching keys: one, many, or all event attributes (for example `event_type`, `terminal_serial`, `relay`, `user`, `finger`, `action`, ...)
 
 ### Example - single matcher (all successful authentications)
@@ -202,6 +203,7 @@ binary_sensor:
   - platform: ekeylegacy
     name: "RARE terminal user 7 relay 0"
     duration: 5
+    icon: mdi:fingerprint
     event_type: authenticated
     terminal_serial: "80123456789012"
     user: "7"

@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorEntity, PLATFORM_SCHEMA
-from homeassistant.const import CONF_NAME, CONF_PLATFORM
+from homeassistant.const import CONF_ICON, CONF_NAME, CONF_PLATFORM
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -16,7 +16,7 @@ from homeassistant.helpers.event import async_call_later
 from .const import CONF_DURATION, DEFAULT_DURATION, EVENT_TYPE_NAME
 
 _DEFAULT_NAME = "ekey trigger"
-_RESERVED_CONFIG_KEYS = {CONF_NAME, CONF_DURATION, CONF_PLATFORM}
+_RESERVED_CONFIG_KEYS = {CONF_NAME, CONF_DURATION, CONF_ICON, CONF_PLATFORM}
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -24,6 +24,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_DURATION, default=DEFAULT_DURATION): vol.All(
             vol.Coerce(float), vol.Range(min=0.1)
         ),
+        vol.Optional(CONF_ICON): cv.icon,
     },
     extra=vol.ALLOW_EXTRA,
 )
@@ -47,6 +48,7 @@ async def async_setup_platform(
             EkeyLegacyTriggerBinarySensor(
                 name=config[CONF_NAME],
                 pulse_seconds=config[CONF_DURATION],
+                icon=config.get(CONF_ICON),
                 matchers=matchers,
             )
         ]
@@ -63,10 +65,12 @@ class EkeyLegacyTriggerBinarySensor(BinarySensorEntity):
         self,
         name: str,
         pulse_seconds: float,
+        icon: str | None,
         matchers: dict[str, str],
     ) -> None:
         """Initialize the trigger binary sensor."""
         self._attr_name = name
+        self._attr_icon = icon
         self._pulse_seconds = pulse_seconds
         self._matchers = matchers
         self._is_on = False
